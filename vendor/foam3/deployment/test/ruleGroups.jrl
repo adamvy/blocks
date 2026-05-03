@@ -1,0 +1,12 @@
+p({
+  class:"foam.core.ruler.RuleGroup",
+  id:"Notifications"
+})
+p({
+  class:"foam.core.ruler.RuleGroup",
+  id:"EventRecord"
+})
+p({
+  class:"foam.core.ruler.RuleGroup",
+  id:"DUG"
+})

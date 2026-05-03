@@ -1,0 +1,48 @@
+p({
+  "class":"foam.core.boot.CSpec",
+  "name":"hostDAO",
+  "serve":true,
+  "serviceScript":"""
+    return new foam.dao.EasyDAO.Builder(x)
+      .setOf(foam.net.Host.getOwnClassInfo())
+      .setJournalType(foam.dao.JournalType.SINGLE_JOURNAL)
+      .setJournalName("hosts")
+      .setRuler(false)
+      .setPm(true)
+      .build();
+    """,
+    "client":"{\"of\":\"foam.net.Host\"}"
+})
+
+p({
+  "class":"foam.core.boot.CSpec",
+  "name":"portDAO",
+  "lazy":false,
+  "serve":true,
+  "serviceScript":"""
+    return new foam.dao.EasyDAO.Builder(x)
+      .setPm(false)
+      .setOf(foam.net.Port.getOwnClassInfo())
+      .setJournalType(foam.dao.JournalType.SINGLE_JOURNAL)
+      .setJournalName("ports")
+      .setCluster(false)
+      .setRuler(false)
+      .build();
+    """,
+    "client":"{\"of\":\"foam.net.Port\"}"
+})
+
+p({
+  "class": "foam.core.boot.CSpec",
+  "name": "xForwardedForConfigDAO",
+  "serve": true,
+  "serviceScript":"""
+    return new foam.dao.EasyDAO.Builder(x)
+      .setPm(false)
+      .setOf(foam.net.XForwardedForConfig.getOwnClassInfo())
+      .setJournalType(foam.dao.JournalType.SINGLE_JOURNAL)
+      .setJournalName("xForwardedForConfig")
+      .build();
+  """,
+  "client":"{\"of\":\"foam.net.XForwardedForConfig\"}"
+})

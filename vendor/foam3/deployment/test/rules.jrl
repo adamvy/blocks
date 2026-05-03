@@ -1,0 +1,57 @@
+p({
+  "class": "foam.core.dig.DUGRule",
+  "id": "foam-core-dig-DUGLoopbackTest",
+  "name": "DUG Webhook Test",
+  enabled: true,
+  "ruleGroup": "DUG",
+  "daoKey": "regionDAO",
+  url: "loopback",
+  "lifecycleState": 1,
+  "spid": "test",
+  "authType": 0,
+  "predicate":{
+    "class":"foam.core.ruler.predicate.FScriptRulePredicate",
+    "query":'o.name != n.name'
+  }
+})
+
+p({
+  "class":"foam.core.ruler.Rule",
+  "id":"DAONotificationRuleActionTest",
+  "name":"DAONotificationRuleActionTest",
+  "priority":100,
+  "ruleGroup":"Notifications",
+  "enabled":true,
+  "after":false,
+  "daoKey":"localCountryDAO",
+  "operation":1,
+  "action": {
+    class:"foam.core.notification.DAONotificationRuleAction",
+    notificationTemplate: "DAONotificationTest-test",
+    group: "test"
+  },
+  "saveHistory":false,
+  "lifecycleState":1
+})
+
+p({
+  "class":"foam.core.ruler.Rule",
+  "id":"foam-core-auth-UserLifecycleDeletedRule",
+  "name":"UserLifecycleDeletedRule",
+  "documentation":"When user removes themselves, generate a UserLifecycleTicket to manage the operation",
+  "enabled":true,
+  "saveHistory":false,
+  "ruleGroup": "auth",
+  "daoKey": "userDAO",
+  "operation": 2,
+  "after": true,
+  "lifecycleState": 1,
+  "predicate": {
+    class: "foam.core.ruler.predicate.FScriptRulePredicate",
+    query: 'o.lifecycleState == foam.core.auth.LifecycleState.ACTIVE && n.lifecycleState == foam.core.auth.LifecycleState.DELETED && n.loginEnabled == true && n.type == "User"'
+  },
+  action: {
+    "class": "foam.core.auth.UserLifecycleDeletedRuleAction"
+  },
+  "generateTicket": true
+})

@@ -1,0 +1,21 @@
+p({
+  "class":"foam.core.menu.Menu",
+  "id":"ndiffs",
+  "label":"NDiffs",
+  "handler":{
+    "class":"foam.core.menu.DAOMenu2",
+    "config":{
+      "class":"foam.comics.v2.DAOControllerConfig",
+      "daoKey":"ndiffDAO",
+      "disableSelection": true,
+      "summaryView": {
+        "class": "foam.u2.table.TableView",
+        "editColumnsEnabled": true,
+        "css": {
+          "width": "100%"
+        }
+      }
+    }
+  },
+  "parent":"admin"
+})

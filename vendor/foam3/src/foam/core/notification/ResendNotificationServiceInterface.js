@@ -1,0 +1,37 @@
+/**
+ * @license
+ * Copyright 2020 The FOAM Authors. All Rights Reserved.
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
+
+
+foam.INTERFACE({
+  package: 'foam.core.notification',
+  name: 'ResendNotificationServiceInterface',
+
+  skeleton: true,
+
+  documentation: 'A service for resending a notification to a user.',
+
+    methods: [
+      {
+        name: 'resend',
+        async: true,
+        type: 'void',
+        args: [
+          {
+            name: 'x',
+            type: 'Context'
+          },
+          {
+            name: 'userId',
+            type: 'Long'
+          },
+          {
+            name: 'notification',
+            type: 'foam.core.notification.Notification'
+          }
+        ]
+      }
+    ]
+});

@@ -1,0 +1,7 @@
+p({
+  "class":"foam.core.auth.ServiceProvider",
+  "id":"test",
+  "enabled":true,
+  anonymousUser: 95250647,
+})
+p({"class":"foam.core.auth.ServiceProvider", "id":"other", "enabled":true})

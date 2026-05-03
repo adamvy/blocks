@@ -1,0 +1,45 @@
+p({
+  "class":"foam.core.auth.User",
+  "id":1,
+  "spid":"foam",
+  "lifecycleState":1,
+  "group":"system",
+  "firstName":"system",
+  "loginEnabled":false
+})
+p({
+  class:"foam.core.auth.User",
+  id:95250647,
+  spid:"foam",
+  userName:"anonymous-foam",
+  firstName:"Anonymous",
+  lastName:"Foam",
+  email:"anonymous-foam@foam.foam",
+  emailVerified:true,
+  created:1596216443346,
+  lastModified:1596216443346,
+  lifecycleState:1,
+  loginEnabled:false,
+  lastModifiedBy:1,
+  group:"anonymous",
+  createdBy:1,
+  createdByAgent:1,
+  compliance:2,
+  isPublic: false
+})
+p({
+  "class":"foam.core.auth.User",
+  "id":42,
+  "spid":"foam",
+  "lifecycleState":1,
+  "group":"system",
+  "firstName":"foam",
+  "middleName":"",
+  "lastName":"admin",
+  "email":"admin@foamdev.com",
+  "userName":"foam-admin",
+  "birthday":"1982-07-07T23:12:00.0Z",
+  "password":"",
+  "emailVerified":true,
+  "loginEnabled":false
+})

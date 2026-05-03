@@ -1,0 +1,12 @@
+p({
+  class: "foam.core.so.test.EventRecordSystemOutageTest",
+  id: "EventRecordSystemOutageTest"
+})
+p({
+  class: "foam.core.so.test.SystemOutageSystemNotificationThemeTest",
+  id: "SystemOutageSystemNotificationThemeTest"
+})
+p({
+  class: "foam.core.so.test.SystemOutageSystemNotificationPermissionTest",
+  id: "SystemOutageSystemNotificationPermissionTest"
+})

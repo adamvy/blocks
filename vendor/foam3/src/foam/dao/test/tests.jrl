@@ -1,0 +1,25 @@
+p({
+  class:"foam.dao.test.FileRollCmdTest",
+  id:"FileRollCmdTest",
+  description:"Tests Journal backup and writing to new empty journal"
+})
+p({
+  class:"foam.dao.test.ArrayDAOTest",
+  id:"ArrayDAOTest"
+})
+p({
+  class:"foam.dao.test.OrDAOTest",
+  id:"OrDAOTest"
+})
+p({
+  class:"foam.dao.test.F3FileJournalTest",
+  id:"F3FileJournalTest"
+})
+p({
+  class:"foam.dao.test.JournalDefaultClassNameTest",
+  id:"JournalDefaultClassNameTest"
+})
+p({
+  class:"foam.dao.test.MDAOCountTest",
+  id:"MDAOCountTest"
+})

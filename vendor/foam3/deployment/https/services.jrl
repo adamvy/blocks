@@ -1,0 +1,91 @@
+p({
+  "class": "foam.core.boot.CSpec",
+  "name": "keyStoreManager",
+  "lazy": false,
+  "serviceScript": """
+    return new foam.core.security.StorageKeyStoreManager.Builder(x)
+      .setType("JKS")
+      .setKeyStorePath("foamdev.jks")
+      .setKeyStorePass("foamdev")
+      .build();
+  """
+})
+
+p({
+  "class": "foam.core.boot.CSpec",
+  "name": "sslContextFactory",
+  "description": "ssl context factory for creating ssl socket",
+  "lazy":false,
+  "service": {
+    "class": "foam.box.socket.SslContextFactory",
+    "enableSSL": true,
+    "keyStorePath": "foamdev.jks",
+    "keyStorePass": "foamdev",
+    "trustStorePath": "foamdev.jks",
+    "trustStorePass": "foamdev"
+  }
+})
+
+p({
+  "class": "foam.core.boot.CSpec",
+  "name": "http",
+  "lazy": false,
+  "service": {
+    "class": "foam.core.jetty.HttpServer",
+    "enableHttp": false,
+    "enableHttps": true,
+    "keystoreFileName": "foamdev.jks",
+    "keystorePassword": "foamdev",
+    "welcomeFiles": ["welcome"],
+    "servletMappings": [{
+      "class": "foam.core.servlet.ServletMapping",
+      "servletObject": {
+        "class": "foam.core.servlet.VirtualHostRoutingServlet",
+        "headerParameters": {
+          "Cache-Control": "no-cache"
+        }
+      },
+      "pathSpec": "/welcome"
+    }, {
+      "class": "foam.core.servlet.ServletMapping",
+      "className": "foam.core.http.NanoRouter",
+      "pathSpec": "/service/*"
+    }, {
+      "class": "foam.core.servlet.ServletMapping",
+      "className": "foam.core.servlet.ResourceImageServlet",
+      "pathSpec": "/images/*",
+      "initParameters": {
+        "cacheControl": "public,max-age=2419200"
+      }
+    }, {
+      "class": "foam.core.servlet.ServletMapping",
+      "className": "org.eclipse.jetty.servlet.DefaultServlet",
+      "pathSpec": "/*",
+      "initParameters": {
+        "cacheControl": "public,max-age=2419200,immutable",
+        "dirAllowed": "false",
+        "pathInfoOnly": "true",
+        "precompressed": "true",
+        "welcomeServlets": "true"
+      }
+    }],
+    "errorMappings": [{
+      "class": "foam.core.servlet.ErrorPageMapping",
+      "errorCode": 404,
+      "location": "/errorPage.html"
+    }, {
+      "class": "foam.core.servlet.ErrorPageMapping",
+      "exceptionType": "javax.ws.rs.NotAuthorizedException",
+      "location": "/unauthorizedAccess.html"
+    }, {
+      "class": "foam.core.servlet.ErrorPageMapping",
+      "exceptionType": "java.lang.Throwable",
+      "location": "/errorPage.html"
+    }],
+    "filterMappings": [{
+      "class": "foam.core.servlet.FilterMapping",
+      "filterClass": "foam.core.http.csp.CSPFilter",
+      "pathSpec": "/*"
+    }]
+  }
+})

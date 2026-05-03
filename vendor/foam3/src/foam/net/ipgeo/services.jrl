@@ -1,0 +1,38 @@
+p({
+  "class": "foam.core.boot.CSpec",
+  "name": "ipGeolocationInfoDAO",
+  "serviceScript":
+  """
+    return new foam.dao.EasyDAO.Builder(x)
+      .setOf(foam.net.ipgeo.IPGeolocationInfo.getOwnClassInfo())
+      .setJournalType(foam.dao.JournalType.SINGLE_JOURNAL)
+      .setJournalName("ipGeolocationInfo")
+      .setAuthorize(false)
+      .setPm(true)
+      .build()
+      .addPropertyIndex(new foam.lang.PropertyInfo[] { foam.net.ipgeo.IPGeolocationInfo.IP });
+  """
+})
+
+// p({
+//   "class":"foam.core.boot.CSpec",
+//   "name":"ipGeolocationService",
+//   serve: true,
+//   lazyClient: false,
+//   // service:{
+//   //   "class":"your.application.IPGeolocationService"
+//   // },
+//   "boxClass":"foam.net.ipgeo.IPGeolocationServiceSkeleton",
+//   "client":"""
+//     {
+//       "class": "foam.net.ipgeo.ClientIPGeolocationService",
+//       "delegate": {
+//         "class":"foam.box.SessionClientBox",
+//         "delegate": {
+//           "class":"foam.box.HTTPBox",
+//           "url": "service/ipGeolocationService"
+//         }
+//       }
+//     }
+//   """
+// })

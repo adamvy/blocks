@@ -1,0 +1,13 @@
+p({
+  class: "foam.core.boot.CSpec",
+  name: "broadcast",
+  authenticate:false,
+  parameters:true,
+  service: {
+    class: "foam.core.http.BroadcastWebAgent",
+    to: [
+      "service/trace",
+      "service/fail"
+    ]
+  }
+})

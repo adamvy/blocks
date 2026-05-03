@@ -1,0 +1,503 @@
+p({
+  "class":"foam.core.script.Script",
+  "id":"createPermissions",
+  "description":"Create missing Permissions",
+  "server":false,
+  "code":"""
+    x.groupDAO.select(function (g) {
+      for (var i = 0; i < g.permissions.length; i++) {
+        x.permissionDAO.put(g.permissions[i]);
+      }
+      perm = g.id + '.*';
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+    });
+
+    x.serviceProviderDAO.select(function (s) {
+      perm = 'serviceprovider.read.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+      perm = 'serviceprovider.update.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+      perm = 'serviceprovider.remove.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+    });
+
+    x.menuDAO.select(function (m) {
+      perm = 'menu.read.' + m.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+      perm = 'menu.read.' + m.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+    });
+
+    x.cSpecDAO.select(function (s) {
+      perm = 'service.run.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+      perm = 'service.read.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+    });
+  """
+})
+p({
+  "class":"foam.core.script.Script",
+  "id":"dumpThreads",
+  "description":"Display Thread Stack Traces.",
+  "server":true,
+  "code":
+  """
+  // TODO: filter out parked threads
+  map = Thread.getAllStackTraces();
+  a   = new ArrayList(map.keySet());
+
+  for ( i = 0 ; i < a.size() ; i++ ) {
+   key = a.get(i);
+   trace = map.get(key);
+   print(key);
+   print(trace);
+  }
+  """,
+  "notes":"Is similar to the /service/threads WebAgent."
+})
+p({
+  "class":"foam.core.script.Script",
+  "id":"createPermissions",
+  "description":"Create missing Permissions",
+  "server":false,
+  "code":"""
+    x.groupDAO.select(function (g) {
+      for (var i = 0; i < g.permissions.length; i++) {
+        x.permissionDAO.put(g.permissions[i]);
+      }
+      perm = g.id + '.*';
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+    });
+
+    x.serviceProviderDAO.select(function (s) {
+      perm = 'serviceprovider.read.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+      perm = 'serviceprovider.update.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+      perm = 'serviceprovider.remove.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+    });
+
+    x.menuDAO.select(function (m) {
+      perm = 'menu.read.' + m.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+      perm = 'menu.read.' + m.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+    });
+
+    x.cSpecDAO.select(function (s) {
+      perm = 'service.run.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+      perm = 'service.read.' + s.id;
+      p = foam.core.auth.Permission.create({ id: perm });
+      x.permissionDAO.put(p);
+    });
+  """
+})
+
+p({
+  "class":"foam.core.script.Script",
+  "id":"showJDAODirectory",
+  "description":"Discover where JDAO files are being saved.",
+  "lastRun":"2018-01-10T17:09:54.779Z",
+  "server":true,
+  "code":
+  """
+    import foam.dao.*;
+
+    setAccessibility(true);
+    DAO dao = x.get("userDAO");
+    while ( ! ( dao instanceof JDAO ) )
+      dao = dao.getDelegate();
+    print(dao.file_);
+  """,
+  "output":"",
+  "notes":""
+})
+p({"class":"foam.core.script.Script","id":"Migrate permissions","code":"import foam.dao.ArraySink;\u000aimport foam.core.auth.*;\u000a\u000alocalGroupDAO = x.get(\"localGroupDAO\");\u000apermissionDAO = x.get(\"localPermissionDAO\");\u000agroupPermissionJunctionDAO = x.get(\"localGroupPermissionJunctionDAO\");\u000a\u000agroups = ((ArraySink) localGroupDAO.select(new ArraySink())).getArray();\u000a\u000afor ( Group group : groups ) {\u000a  Permission[] permissions = group.getPermissions();\u000a\u000a  for ( Permission permission : permissions ) {\u000a\u000a    // Add to permissionDAO if not already there.\u000a    Permission existing = permissionDAO.find(permission.getId());\u000a\u000a    if ( existing == null ) {\u000a      permissionDAO.put(permission);\u000a      print(\"Added permission \" + permission.getId() + \" to permissionDAO.\");\u000a    }\u000a\u000a    // Add to groupPermissionJunctionDAO if not already there.\u000a    GroupPermissionJunction junction = group.getPermissions2(x).createJunction(permission.getId());\u000a    GroupPermissionJunction existing2 = groupPermissionJunctionDAO.find(junction);\u000a\u000a    if ( existing2 == null ) {\u000a      group.getPermissions2(x).add(permission);\u000a      print(\"Added \" + permission.getId() + \" to group \" + group.getId() + \".\");\u000a    } else {\u000a      print(permission.getId() + \" is already in group \" + group.getId() + \".\");\u000a    }\u000a  }\u000a}\u000a"})
+p({"class":"foam.core.script.Script","id":"Sample Threads","description":"Perform statistical thread sampling to discover code hot spots.","lastRun":"2019-06-24T17:30:02.660Z","lastDuration":12626,"status":1,"code":"map     = new HashMap();\n\nfor ( j = 0 ; j < 1000 ; j++ ) {\n\nthreads = Thread.getAllStackTraces().values();\n\nfor ( i = threads.iterator() ; i.hasNext() ; ) {\n  t = i.next();\n  try {\n    l = t[0].toString().trim();\n    if ( l.equals(\"java.lang.Thread.dumpThreads(Native Method)\") ) continue;\n    if ( l.equals(\"sun.misc.Unsafe.park(Native Method)\") ) continue;\n    if ( l.equals(\"java.lang.Thread.sleep(Native Method)\") ) continue;\n    if ( l.equals(\"java.lang.Object.wait(Native Method)\") ) continue;\n    if ( l.equals(\"sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)\") ) continue;\n    if ( l.equals(\"sun.nio.ch.KQueueArrayWrapper.register0(Native Method)\") ) continue;\n    if ( l.equals(\"sun.nio.ch.ServerSocketChannelImpl.accept0(Native Method)\") ) continue;\n\n    if ( map.containsKey(l) ) {\n      map.put(l, map.get(l) + 1);\n    } else {\n      map.put(l, 1);\n    }\n  } catch (Throwable t) {\n  }\n}\n\nThread.sleep(10);\n}\n\nfor ( i = map.keySet().iterator() ; i.hasNext() ; ) {\n  key = i.next();\n  value = map.get(key);\n  if ( ! String.valueOf(value).equals(\"1\") ) \n    print(String.format(\"%-100s %s\", new Object[] {key, value}));\n}\n\nprint(\"done\");","output":"foam.lang.FObject.compareTo(FObject.java:405)                                         2\ndone\n"})
+p({"class":"foam.core.script.Script","id":"Generate Screenshots","server":false,"status":1,code:"menuDAO = x.menuDAO;\n\nvar e = foam.u2.Element.create({},x);\ne.write(document);\n\nmenuDAO.select(function(m) {\n// skip menus that will break the view\nif ( m.id == 'sign-out' || m.id == 'admin.translationconsole' ) return;\nif ( m.id.indexOf('sme') != -1 || m.parent == 'sme' || m.parent == 'smeNavigation' ) return;\nif ( m.parent == 'settings' ) return;\ntry {\n   print(m.id);\n\n   if ( ! m.handler ) return;\n   if ( m.handler == 'foam.core.menu.DocumentFileMenu' ) return;\n   if ( m.handler == 'foam.core.menu.SubMenu' ) return;\n   if ( m.handler == 'foam.core.menu.DAOMenu' ) return;\n   view = m.handler.createView(x, m);\n   e.start(view);\n} catch (t) {\n}\n});\n\nvar dao = foam.core.boot.DAOConfigSummaryView.create({}, x).filteredDAO;\n\ndao.limit(100000).select(function(spec) {\n  try {\n  print(spec.id);\n  var dao = x[spec.id];\n  var view1 = foam.comics.BrowserView.create({\n    data: dao\n  }, x);\n  // var view2 = foam.comics.v2.DAOCreateView.create({data: dao.of.create()},x);\n  var view2 = foam.u2.DetailView.create({data: dao.of.create()},x);\n  e.start(view1);\n  e.tag('br');\n  e.start(view2);\n  e.tag('br');\n  e.tag('br');\n  } catch (t) {}\n});\n","output":""})
+
+p({
+  "class":"foam.core.script.Script",
+  "id":"TestScriptShell",
+  "language":1,
+  "code":
+  """
+    int main()
+    {
+      int t=3;
+        for ( int i = 0 ; i < 1000000 ; i++ ) {
+          t+=i;
+        }
+      return t;
+    }
+
+    long startTime = System.currentTimeMillis();
+    int r = main();
+    long endTime = System.currentTimeMillis();
+    long d = endTime-startTime;
+
+    System.out.println( "The execution time is " + d + " " + r );
+  """
+})
+
+p({
+  "class":"foam.core.script.Script",
+  "id":"addGoogleSheetsAndPDFGoogleSheetsExportDriverRegistry",
+  "description":"Add GoogleSheets and PDFGoogleSheets to exportDriverRegistryDAO.",
+  "server":true,
+  "code":
+  """
+    import foam.lang.X;
+    import foam.dao.DAO;
+    import foam.core.export.ExportDriverRegistry;
+
+    ExportDriverRegistry edr = new ExportDriverRegistry.Builder(x).setId("GoogleSheets").setDriverName("foam.core.export.GoogleSheetsExportDriver").setTargetModel("").setIsOpenable(true).setEnabled(true).build();
+    ExportDriverRegistry edr1 = new ExportDriverRegistry.Builder(x).setId("PDFGoogleSheets").setDriverName("foam.core.export.PDFGoogleSheetsExportDriver").setExtension("pdf").setMimeType("").setIsDownloadable(true).setEnabled(true).build();
+
+    DAO exportDriverRegistryDAO = (DAO) x.get("exportDriverRegistryDAO");
+    try {
+      exportDriverRegistryDAO.put(edr);
+      print("put: " + edr.getId() + " completed");
+      try {
+        exportDriverRegistryDAO.put(edr1);
+        print("put: " + edr1.getId() + " completed");
+      } catch (Throwable t) {
+        print("❌: Add GoogleSheets and PDFGoogleSheets failed: put " + edr1.getId() + " failed");
+        print(t.getMessage());
+      }
+    } catch (Throwable t) {
+      print("❌: Add GoogleSheets and PDFGoogleSheets failed: put " + edr.getId() + " failed");
+      print(t.getMessage());
+    }
+  """
+})
+
+p({
+  class:"foam.core.script.Script",
+  id:"MDAOIndexes",
+  description:"List MDAO Indexes",
+  code:"""
+  import foam.dao.MDAO;
+  import foam.dao.index.AltIndex;
+  import foam.dao.index.Index;
+
+  daoKey = "localAccountDAO";
+
+  dao = x.get(daoKey);
+  mdao = dao.cmd(MDAO.GET_MDAO_CMD);
+  print(mdao);
+  altIndex = (AltIndex) mdao.index_;
+  delegates = altIndex.delegates_;
+  for ( TreeIndex i : delegates ) {
+    print(i.prop_);
+  }
+  """
+})
+p({
+  class:"foam.core.script.Script",
+  id:"CommentJShell",
+  description:"Test for comment in JShell",
+  language:"JSHELL",
+  code:"""
+  import java.io.PrintStream;
+
+  PrintStream ps = (PrintStream) x.get("out");
+
+  System.out.println("comment 1");//comment1
+
+  ps.println("comment // 1");
+  // comment2
+  System.
+  out.println("comment 2");
+
+  ps.
+    println("comment 2");
+
+  /* comment 3 */
+
+  /*
+  comment 4
+  */
+
+  System.out.println("comment 3");
+  ps.println("comment 3");
+  ps.println("Done!");
+  """
+})
+p({
+"class":"foam.core.script.Script",
+"id":"Show Creation Counts",
+"description":"Show how many objects have been created of each class.",
+"language":0,
+"code":
+"""
+var a = [];
+Object.keys(foam.USED).forEach(k => {
+  try {
+    var m = foam.maybeLookup(k);
+    if ( m && m.count_ ) a.push(m);
+  } catch (x) {}
+});
+
+a.sort(function (a, b) { return a.count_ - b.count_ });
+
+for ( var i = 0 ; i < a.length ; i++ ) {
+  var m = a[i];
+  console.log(m.id, m.count_);
+}
+"""
+})
+p({
+"class":"foam.core.script.Script",
+"id":"Clear Creation Counts",
+"description":"Clear creation counts.",
+"language":0,
+"code":
+"""
+Object.keys(foam.USED).forEach(k => {
+  try {
+    var m = foam.maybeLookup(k);
+    if ( m && m.count_ ) m.count_ = 0;
+  } catch (x) {}
+});
+"""
+})
+p({
+"class":"foam.core.script.Script",
+"id":"Count DAO Listeners",
+"description":"Show number of listeners for each DAO.",
+"language":0,
+"code":
+"""
+x.cSpecDAO.select(ns => {
+  if ( ns.name.indexOf('DAO') == -1 ) return;
+  try {
+    var count = x[ns.name].cmd(foam.dao.DAO.COUNT_LISTENERS_CMD);
+    if ( count ) console.log(ns.name, count);
+  } catch(x) {}
+});
+"""
+})
+p({
+class:"foam.core.script.Script",
+id:"DAOSecurityReport",
+description:"List DAO's with potential security issues.",
+language:0,
+code:"""
+if ( ! globalThis.test ) globalThis.test = function(pass, msg) {
+  console.log(pass ? 'SUCCESS' : 'FAILURE', msg);
+}
+
+var COLUMNS = [
+  'Warning',
+  'DAO',
+  'Authenticated',
+  'Authorizer',
+  'Permissioned',
+  'Read-Only',
+  'SPID Aware',
+  'Groups',
+  'Capabilities',
+  'Notes'
+];
+
+var IGNORED_GROUPS = {
+  'msp-admin': true,
+  admin: true,
+  system: true,
+  liquidBasic: true,
+  'fraud-ops-permissions': true,
+  'support-ops-permissions': true,
+  'support-base': true,
+  'payment-ops': true,
+  'operations-support': true,
+};
+
+var data = [];
+
+var groups = await x.groupDAO.select(); groups = groups.array;
+var caps = await x.capabilityDAO.select(); caps = caps.array;
+
+function table(data, columns) {
+  console.table(data);
+  var output = columns.join('|') + '\\n';
+  output += data.map(a => a.join('|')).join('\\n');
+  console.log(output);
+}
+
+var array = await x.cSpecDAO.select();
+array = array.array;
+for ( var i = 0 ; i < array.length ; i++ ) {
+  var n = array[i];
+  if ( n.name.indexOf('DAO') == -1 ) continue;
+  if ( ! n.serve )  continue;
+  if ( ! n.enabled )  continue;
+
+  let authorizer = '';
+  let permissioned = false;
+  let readOnly   = false;
+  let nullDAO    = false;
+  let spidAware   = false;
+try {
+readOnly   = !! await x[n.name].cmd('CLASS? foam.dao.ReadOnlyDAO');
+} catch (x) { }
+try {
+nullDAO   = !! await x[n.name].cmd('CLASS? foam.dao.NullDAO');
+} catch (x) { }
+try { authorizer = await x[n.name].cmd('AUTHORIZER?'); } catch (x) { }
+try { permissioned = !! await x[n.name].cmd('CLASS? foam.core.auth.PermissionedPropertyDAO'); } catch (x) { }
+try { spidAware = !! await x[n.name].cmd('CLASS? foam.core.auth.ServiceProviderAwareDAO'); } catch (x) { }
+
+if ( authorizer ) {
+ authorizer = authorizer.replace('foam.core.auth.', '');
+ authorizer = authorizer.replace('Authorizer', '');
+}
+
+var pgroups = [];
+for ( var j = 0 ; j < groups.length ; j++ ) {
+  var g = groups[j];
+    if ( ! IGNORED_GROUPS[g.id] && await g.implies(x, 'service.' + n.name) ) {
+      pgroups.push(g.id);
+    }
+}
+
+var pcaps = [];
+for ( var j = 0 ; j < caps.length ; j++ ) {
+  var c = caps[j];
+   var granted =  c.permissionsGranted.find(p => {
+      return p === 'service.' + n.name;
+    });
+   if ( granted ) {
+      pcaps.push(c.name);
+    }
+}
+
+let warning = '';
+if  ( ! authorizer && ! readOnly && ! n.authenticate && ! nullDAO ) {
+  warning = 'alert';
+  test(false, 'DAO Security Audit: ' + n.name + ' ALERT');
+} else if ( ! authorizer && pgroups.length && ! readOnly && ! nullDAO ) {
+  warning = 'warning';
+  test(!! n.authNotes, 'DAO Security Audit: ' + n.name + ' WARNING');
+} else {
+    test(true, 'DAO Security Audit: ' + n.name);
+}
+if ( warning == 'warning' && n.authNotes ) warning = 'PASSED*';
+
+  data.push( [
+     warning || 'PASSED',
+     n.name,
+     n.authenticate,
+     authorizer || '',
+     permissioned ? 'permissioned' : '',
+     readOnly ? 'read-only' : nullDAO ? 'null' : '',
+     spidAware ? 'spid-aware' : '',
+     pgroups.join(', '),
+     pcaps.join(', '),
+     n.authNotes
+   ]);
+}
+
+table(data, COLUMNS);
+""",
+notes:"",
+lastModifiedBy:1348,lastModified:1697222596604
+})
+p({
+  class: "foam.core.script.Script",
+  id: "BeanShell JConsole",
+  code:
+  """
+  import bsh.util.JConsole;
+  import javax.swing.*;
+
+  appConfig = x.get("appConfig");
+
+  if ( appConfig.getMode() != foam.core.app.Mode.DEVELOPMENT ) {
+    print("Can only be run in DEVELOPMENT mode.");
+    return;
+  }
+
+  SwingUtilities.invokeLater(new Runnable() { public void run() {
+  JFrame      f       = new JFrame();
+  JConsole    console = new JConsole();
+
+  f.setContentPane(console);
+
+  Interpreter shell   = new Interpreter(console);
+
+  shell.eval("import foam.lang.*;");
+  shell.eval("import foam.mlang.MLang;");
+  shell.eval("import foam.dao.*;");
+  shell.set("x", x);
+
+  new Thread(shell).start();
+
+  f.setVisible(true);
+  f.setResizable(true);
+  f.setSize(800, 600);
+  f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+  f.setTitle("BeanShell JConsole");
+  }
+  });  """
+})
+p({
+  "class":"foam.core.script.Script",
+  "id":"MDAOCounts",
+  "description":"Report all MDAO sizes",
+  "language":1,
+  "code":
+  """
+import foam.dao.DAO;
+import foam.dao.EasyDAO;
+import foam.dao.NullDAO;
+import foam.mlang.MLang;
+import foam.core.boot.CSpec;
+import foam.util.SafetyUtil;
+
+services = x.get("cSpecDAO");
+a = services.select().array;
+for ( s : a ) {
+  ss = s.getServiceScript();
+  if ( SafetyUtil.isEmpty(ss) ) continue;
+  if ( ! ss.contains("EasyDAO") ) continue;
+  d = x.get(s.name);
+  if ( ! ( d instanceof DAO ) ) continue;
+  delegate = d;
+  while ( delegate != null ) {
+    if ( delegate instanceof EasyDAO ) break;
+    if ( delegate instanceof NullDAO ) {
+      delegate = null;
+      break;
+    }
+    delegate = delegate.delegate;
+  }
+
+  if ( delegate == null ) continue;
+  ed = delegate;
+  if ( ed.getNullify() ) continue;
+  if ( ed.getMdao() == null ) continue;
+  m = ed.getMdao();
+  c = m.select(MLang.COUNT());
+  print(s.name + ", "+c.value);
+}
+  """
+})

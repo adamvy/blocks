@@ -1,0 +1,36 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Olympic Medals</title>
+
+  <script src="../../../foam.js"></script>
+  <script src="./Medal.js"></script>
+  <script src="./Controller.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+    .outer-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .inner-container {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="outer-container">
+    <foam id="olympics" class="foam.demos.olympics.Controller"></foam>
+  </div>
+</body>
+</html>

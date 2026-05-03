@@ -1,0 +1,46 @@
+/**
+ * @license
+ * Copyright 2019 The FOAM Authors. All Rights Reserved.
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
+
+foam.CLASS({
+  package: 'foam.u2.layout',
+  name: 'GUnit',
+  extends: 'foam.u2.Element',
+  documentation: `
+    A Grid Unit based on a responsive grid system
+  `,
+
+  requires: [
+    'foam.u2.layout.GridColumns'
+  ],
+  
+  properties: [
+    {
+      class: 'FObjectProperty',
+      of: 'foam.u2.layout.GridColumns',
+      name: 'columns',
+      documentation: `
+        Sets up a standard default column width across all display types
+      `,
+      adapt: function(o, n, p) {
+        n = foam.Number.isInstance(n) ? { columns: n } : n;
+        return foam.lang.FObjectProperty.ADAPT.value.call(this, o, n, p);
+      },
+      value: { columns: 12 }
+    },
+    {
+      class: 'FObjectProperty',
+      of: 'foam.u2.layout.GridColumns',
+      name: 'rwColumns',
+      documentation: `Can be used to change the property's grid placement in RW mode`,
+      adapt: function(o, n, p) {
+        n = foam.Number.isInstance(n) ? { columns: n } : n;
+        return foam.lang.FObjectProperty.ADAPT.value.call(this, o, n, p);
+      },
+      expression: function(columns) { return columns; }
+    },
+    'prop'
+  ],
+});

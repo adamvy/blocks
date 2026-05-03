@@ -1,0 +1,48 @@
+p({
+  "class":"foam.core.menu.Menu",
+  "id":"admin.scripts",
+  "label":"Scripts",
+  "keywords": [ "script" ],
+  "handler":{
+    "class":"foam.core.menu.DAOMenu2",
+    "config":{
+      "class":"foam.comics.v2.DAOControllerConfig",
+      "daoKey":"scriptDAO"
+    }
+  },
+  "parent":"admin"
+})
+
+p({
+  "class":"foam.core.menu.Menu",
+  "id":"admin.scriptevents",
+  "label":"Script Events",
+  "keywords": [ "script" ],
+  "handler":{
+    "class":"foam.core.menu.DAOMenu2",
+    "config":{
+      "class":"foam.comics.v2.DAOControllerConfig",
+      "daoKey":"scriptEventDAO",
+      "createPredicate":{"class":"foam.mlang.predicate.False"},
+      "editPredicate":{"class":"foam.mlang.predicate.False"},
+      "deletePredicate":{"class":"foam.mlang.predicate.False"}
+    }
+  },
+  "parent":"admin"
+})
+
+p({
+  "class":"foam.core.menu.Menu",
+  "id":"admin.scriptparameters",
+  "label":"Script Parameters",
+  "keywords": [ "script" ],
+  "handler":{
+    "class":"foam.core.menu.DAOMenu2",
+    "config":{
+      "class":"foam.comics.v2.DAOControllerConfig",
+      "daoKey":"scriptParameterDAO",
+      "deletePredicate":{"class":"foam.mlang.predicate.False"}
+    }
+  },
+  "parent":"admin"
+})

@@ -1,0 +1,2 @@
+p({"class":"foam.core.auth.Permission","id":"historyrecord.read.*","description":""})
+p({"class":"foam.core.auth.Permission","id":"historyrecord.create","description":""})

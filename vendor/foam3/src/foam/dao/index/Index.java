@@ -1,0 +1,57 @@
+/**
+ * @license
+ * Copyright 2017 The FOAM Authors. All Rights Reserved.
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
+
+package foam.dao.index;
+
+import foam.lang.FObject;
+import foam.dao.Sink;
+import foam.mlang.order.Comparator;
+import foam.mlang.predicate.Predicate;
+
+import java.io.IOException;
+
+public interface Index {
+  // Add an object
+  public Object put(Object state, FObject value);
+
+  // Remove an object
+  public Object remove(Object state, FObject value);
+
+  // Update an object
+  default Object update(Object state, FObject oldValue, FObject value) {
+    state = remove(state, oldValue);
+    return put(state, value);
+  }
+
+  // Remove all objects
+  public Object removeAll();
+
+  public FObject find(Object state, Object key);
+
+  // Create a Plan for a select()
+  public SelectPlan planSelect(Object state, Sink sink, long skip, long limit, Comparator order, Predicate predicate);
+
+  // Create a Plan and then execute it directly.
+  default public void select(Object state, Sink sink, long skip, long limit, Comparator order, Predicate predicate) {
+    planSelect(state, sink, skip, limit, order, predicate).select(state, sink, skip, limit, order, predicate);
+  }
+
+  // Return number of objects stored in this Index
+  public long size(Object state);
+
+  // Wrap an object when stored in this Index
+  public Object wrap(Object state);
+
+  // Unwrap an object stored in this Index. o == unwrap(wrap(o))
+  public Object unwrap(Object state);
+
+  // Flushes the state
+  public void flush(Object state) throws IOException;
+
+  // Future:
+  // toString()
+  // bulkLoad()
+}

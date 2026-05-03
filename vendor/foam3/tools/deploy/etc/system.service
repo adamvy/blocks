@@ -1,0 +1,18 @@
+[Unit]
+Description=APP_NAME Platform
+After=network.target
+Requires=network.target
+StartLimitIntervalSec=30
+StartLimitBurst=3
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+ExecStart=FOAM_ROOT/bin/run.sh -AFOAM_ROOT -NAPP_NAME -VVERSION -WWEB_PORT
+User=USER
+Group=GROUP
+
+[Install]
+WantedBy=multi-user.target
+Alias=APP_NAME.service

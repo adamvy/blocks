@@ -1,0 +1,21 @@
+p({
+  class:"foam.core.menu.Menu",
+  id:"ruler",
+  label: "Ruler",
+  handler: {
+    class:"foam.core.menu.SubMenu"
+  },
+  parent:""
+})
+
+p({
+  "class": "foam.core.menu.Menu",
+  "id": "ruler.rulerlab",
+  "label": "Lab",
+  "keywords": ["rulerlab", "ruler lab", "ruler", "lab", "debug ruler", "debug rules"],
+  "handler": {
+    "class": "foam.core.menu.ViewMenu",
+    "view": {"class":"foam.u2.ruler.RulerLab"}
+  },
+  "parent":"ruler"
+})

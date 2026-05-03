@@ -1,0 +1,15 @@
+p({
+  "class": "foam.core.dig.SUGAR",
+  "id": "checkUserTest",
+  "data": """{
+    "service": "auth",
+    "interfaceName": "foam.core.auth.AuthService",
+    "method": "checkUser",
+    "X": "X",
+    "user": {
+      "class":"foam.core.auth.User",
+      "group":"admin"
+     },
+    "permission":"menu.read.integration"
+  }"""
+})
