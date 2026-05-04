@@ -334,6 +334,11 @@ foam.CLASS({
       return -1;
     },
 
+    function shelfPieceAt(x, y) {
+      var slot = this.shelfSlotAt(x, y);
+      return slot === -1 ? null : this.topShelfPiece(slot);
+    },
+
     function paintSelf(ctx) {
       this.paintBackground(ctx);
       this.paintBoard(ctx);
@@ -803,6 +808,13 @@ foam.CLASS({
       if ( this.draggingPiece ) return false;
 
       var target = this.findFirstChildAt(x, y);
+      var pickedFromShelfSlot = false;
+
+      if ( ! this.Piece.isInstance(target) ) {
+        target = this.shelfPieceAt(x, y);
+        pickedFromShelfSlot = !! target;
+      }
+
       if ( ! this.Piece.isInstance(target) ) return false;
 
       this.dragSource = target.location;
@@ -824,8 +836,8 @@ foam.CLASS({
       }
 
       this.draggingPiece = target;
-      this.dragOffsetX = x - target.x;
-      this.dragOffsetY = y - target.y;
+      this.dragOffsetX = pickedFromShelfSlot ? target.pixelWidth() / 2 : x - target.x;
+      this.dragOffsetY = pickedFromShelfSlot ? target.pixelHeight() / 2 : y - target.y;
 
       this.remove(target);
       this.add(target);
