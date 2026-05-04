@@ -7,6 +7,9 @@ foam.POM({
   ],
 
   files: [
-    { name: 'src/woodblock/HelloWorld', flags: 'web' }
+    { name: 'src/woodblock/Theme', flags: 'web' },
+    { name: 'src/woodblock/Piece', flags: 'web' },
+    { name: 'src/woodblock/Game', flags: 'web' },
+    { name: 'src/woodblock/GameView', flags: 'web' }
   ]
 });
