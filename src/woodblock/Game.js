@@ -36,10 +36,13 @@ foam.CLASS({
     [ 'dragOffsetY', 0 ],
     [ 'dragOriginX', 0 ],
     [ 'dragOriginY', 0 ],
+    [ 'dragStartPointerX', 0 ],
+    [ 'dragStartPointerY', 0 ],
     [ 'dragOriginColumn', -1 ],
     [ 'dragOriginRow', -1 ],
     [ 'dragSourceSlot', -1 ],
     [ 'dragSource', '' ],
+    [ 'dragInputType', '' ],
     [ 'lastPointerX', 0 ],
     [ 'lastPointerY', 0 ],
     {
@@ -189,7 +192,7 @@ foam.CLASS({
       for ( var size = 52 ; size >= 6 ; size-- ) {
         var gap = size <= 10 ? 1 : size <= 22 ? 2 : 3;
         var margin = size <= 10 ? 4 : size <= 14 ? 6 : size <= 22 ? 10 : size <= 32 ? 16 : 24;
-        var feedGap = size <= 10 ? 4 : size <= 14 ? 5 : size <= 22 ? 8 : size <= 32 ? 16 : 28;
+        var feedGap = size <= 10 ? 8 : size <= 14 ? 10 : size <= 22 ? 16 : size <= 32 ? 26 : 42;
         var feedSlotGap = size <= 10 ? 3 : size <= 16 ? 4 : size <= 24 ? 6 : size <= 34 ? 8 : 12;
         var boardWidth = this.width * size + Math.max(0, this.width - 1) * gap;
         var boardHeight = this.height * size + Math.max(0, this.height - 1) * gap;
@@ -212,7 +215,7 @@ foam.CLASS({
       return {
         cellSize: 6,
         cellGap: 1,
-        feedGap: 4,
+        feedGap: 8,
         feedSlotGap: 3
       };
     },
@@ -545,7 +548,7 @@ foam.CLASS({
         p.y < this.canvasHeight;
     },
 
-    function startDragAt(x, y) {
+    function startDragAt(x, y, inputType) {
       if ( this.draggingPiece ) return false;
 
       var target = this.findFirstChildAt(x, y);
@@ -557,6 +560,9 @@ foam.CLASS({
       this.dragOriginRow = target.boardRow;
       this.dragOriginX = target.x;
       this.dragOriginY = target.y;
+      this.dragStartPointerX = x;
+      this.dragStartPointerY = y;
+      this.dragInputType = inputType || '';
 
       if ( target.location === 'shelf' ) {
         if ( ! this.takeShelfPiece(target) ) return false;
@@ -583,9 +589,24 @@ foam.CLASS({
       this.lastPointerX = x;
       this.lastPointerY = y;
       this.draggingPiece.x = x - this.dragOffsetX;
-      this.draggingPiece.y = y - this.dragOffsetY;
+      this.draggingPiece.y = y - this.dragOffsetY - this.touchLiftFor(x, y);
       this.updateDropTarget();
       this.invalidate();
+    },
+
+    function touchLiftFor(x, y) {
+      if ( this.dragInputType !== 'touch' ) return 0;
+
+      var dx = x - this.dragStartPointerX;
+      var dy = y - this.dragStartPointerY;
+      var distance = Math.sqrt(dx * dx + dy * dy);
+      var deadZone = 8;
+      if ( distance <= deadZone ) return 0;
+
+      var maxLift = Math.max(44, Math.min(92, this.cellSize * 2.6));
+      var ramp = Math.max(34, Math.min(70, this.cellSize * 1.7));
+
+      return maxLift * (1 - Math.exp(-(distance - deadZone) / ramp));
     },
 
     function eventToCanvasPoint(e) {
@@ -626,6 +647,9 @@ foam.CLASS({
       this.activePointerId = -1;
       this.dragSource = '';
       this.dragSourceSlot = -1;
+      this.dragInputType = '';
+      this.dragStartPointerX = 0;
+      this.dragStartPointerY = 0;
       this.dragOriginColumn = -1;
       this.dragOriginRow = -1;
       this.updateDropTarget();
@@ -640,7 +664,7 @@ foam.CLASS({
       if ( e.pointerType === 'mouse' && e.button !== 0 ) return;
 
       var point = this.eventToCanvasPoint(e);
-      if ( ! this.startDragAt(point.x, point.y) ) return;
+      if ( ! this.startDragAt(point.x, point.y, e.pointerType) ) return;
 
       this.claimPointer(e);
       e.preventDefault();
