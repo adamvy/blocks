@@ -34,44 +34,16 @@ pmake.call(
   ].join(' ')
 );
 
-fs.writeFileSync(path.join(distDir, 'index.html'), `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Woodblock</title>
-    <style>
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        min-height: 100%;
-        width: 100%;
-        background: #dfe8e2;
-        overflow: hidden;
-      }
+const devScript = '<script src="vendor/foam3/src/foam.js" project="pom"></script>';
+const prodScript = `<script src="${bundleFile}" flags="-debug,-dev"></script>`;
+const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const prodIndex = index.replace(devScript, prodScript);
 
-      body {
-        display: grid;
-        min-height: 100vh;
-        min-height: 100svh;
-        min-height: 100dvh;
-        overflow: hidden;
-        place-items: center;
-      }
+if ( prodIndex === index ) {
+  throw new Error('Could not find development FOAM script tag in index.html');
+}
 
-      canvas {
-        display: block;
-        touch-action: none;
-      }
-    </style>
-    <script src="${bundleFile}" flags="-debug,-dev"></script>
-  </head>
-  <body>
-    <foam class="woodblock.GameView"></foam>
-  </body>
-</html>
-`);
+fs.writeFileSync(path.join(distDir, 'index.html'), prodIndex);
 
 console.log(`Built ${path.relative(root, path.join(distDir, 'index.html'))}`);
 console.log(`Built ${path.relative(root, path.join(distDir, bundleFile))}`);

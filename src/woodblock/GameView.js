@@ -18,36 +18,52 @@ foam.CLASS({
 
   css: `
     ^ {
-      align-items: center;
       box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      justify-content: center;
-      max-width: 100%;
-      min-height: 100vh;
-      min-height: 100svh;
-      min-height: 100dvh;
+      display: grid;
+      gap: 8px;
+      grid-template-rows: minmax(0, 1fr) auto;
+      height: 100vh;
+      height: 100svh;
+      height: 100dvh;
+      max-height: 100vh;
+      max-height: 100svh;
+      max-height: 100dvh;
+      max-width: 100vw;
       overflow: hidden;
-      padding: 12px;
-      width: 100%;
+      padding: 8px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      padding-left: calc(8px + env(safe-area-inset-left));
+      padding-right: calc(8px + env(safe-area-inset-right));
+      padding-top: calc(8px + env(safe-area-inset-top));
+      width: 100vw;
     }
 
     ^canvas {
+      align-items: center;
       display: flex;
       justify-content: center;
       min-height: 0;
+      min-width: 0;
+      max-height: 100%;
       max-width: 100%;
       overflow: hidden;
+    }
+
+    ^canvas canvas {
+      max-height: 100%;
+      max-width: 100%;
     }
 
     ^controls {
       align-items: center;
+      box-sizing: border-box;
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       justify-content: center;
+      min-width: 0;
       max-width: 100%;
+      width: 100%;
     }
 
     ^control {
@@ -55,22 +71,26 @@ foam.CLASS({
       background: #cbd8ce;
       border: 1px solid #9fb0a5;
       border-radius: 8px;
+      box-sizing: border-box;
       display: grid;
+      flex: 1 1 136px;
       gap: 6px;
-      grid-template-columns: auto 36px minmax(56px, auto) 36px;
-      min-height: 42px;
-      padding: 6px 8px;
+      grid-template-columns: minmax(42px, 1fr) 34px minmax(34px, auto) 34px;
+      max-width: 184px;
+      min-height: 38px;
+      min-width: 0;
+      padding: 5px 6px;
     }
 
     ^label {
       color: #36523d;
-      font: 600 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      min-width: 44px;
+      font: 600 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-width: 0;
     }
 
     ^value {
       color: #253a2b;
-      font: 700 15px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 700 14px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       text-align: center;
     }
 
@@ -82,9 +102,9 @@ foam.CLASS({
       color: #f9fbf7;
       cursor: pointer;
       font: 700 20px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      height: 32px;
+      height: 30px;
       padding: 0;
-      width: 36px;
+      width: 34px;
     }
 
     ^step:active {
@@ -111,14 +131,12 @@ foam.CLASS({
       this.window.addEventListener('orientationchange', this.resizeGame);
       if ( this.window.visualViewport ) {
         this.window.visualViewport.addEventListener('resize', this.resizeGame);
-        this.window.visualViewport.addEventListener('scroll', this.resizeGame);
       }
       this.onDetach(function() {
         this.window.removeEventListener('resize', this.resizeGame);
         this.window.removeEventListener('orientationchange', this.resizeGame);
         if ( this.window.visualViewport ) {
           this.window.visualViewport.removeEventListener('resize', this.resizeGame);
-          this.window.visualViewport.removeEventListener('scroll', this.resizeGame);
         }
       }.bind(this));
     },
@@ -177,34 +195,28 @@ foam.CLASS({
       }
     },
 
-    function viewportWidth() {
-      return Math.floor(
-        this.window.visualViewport && this.window.visualViewport.width ||
-        this.window.innerWidth ||
-        1);
-    },
-
-    function viewportHeight() {
-      return Math.floor(
-        this.window.visualViewport && this.window.visualViewport.height ||
-        this.window.innerHeight ||
-        1);
-    },
-
-    function controlReserveHeight() {
+    function availableCanvasSize() {
       if ( this.element_ && this.element_.querySelector ) {
-        var controls = this.element_.querySelector('.' + this.myClass('controls'));
-        if ( controls ) {
-          var height = Math.ceil(controls.getBoundingClientRect().height);
-          if ( height > 0 ) return height + 46;
+        var canvas = this.element_.querySelector('.' + this.myClass('canvas'));
+        if ( canvas ) {
+          var bounds = canvas.getBoundingClientRect();
+          if ( bounds.width > 0 && bounds.height > 0 ) {
+            return {
+              width: Math.floor(bounds.width),
+              height: Math.floor(bounds.height)
+            };
+          }
         }
       }
 
-      return 124;
+      return {
+        width: Math.max(1, Math.floor(this.window.innerWidth || 1) - 16),
+        height: Math.max(1, Math.floor(this.window.innerHeight || 1) - 96)
+      };
     },
 
     function pickCellSize(availableWidth, availableHeight) {
-      for ( var size = 36 ; size >= 8 ; size-- ) {
+      for ( var size = 36 ; size >= 6 ; size-- ) {
         var gap = size <= 10 ? 1 : size <= 22 ? 2 : 3;
         var margin = size <= 14 ? 6 : size <= 16 ? 8 : size <= 22 ? 10 : size <= 28 ? 16 : 24;
         var feedGap = size <= 14 ? 5 : size <= 16 ? 6 : size <= 22 ? 8 : size <= 28 ? 16 : 30;
@@ -229,7 +241,7 @@ foam.CLASS({
       }
 
       return {
-        cellSize: 8,
+        cellSize: 6,
         cellGap: 1,
         boardMargin: 6,
         feedGap: 5,
@@ -247,9 +259,8 @@ foam.CLASS({
     function resizeGame() {
       if ( ! this.game ) return;
 
-      var availableWidth = Math.max(1, this.viewportWidth() - 24);
-      var availableHeight = Math.max(1, this.viewportHeight() - this.controlReserveHeight());
-      var layout = this.pickCellSize(availableWidth, availableHeight);
+      var size = this.availableCanvasSize();
+      var layout = this.pickCellSize(size.width, size.height);
 
       this.game.cellSize = layout.cellSize;
       this.game.cellGap = layout.cellGap;
