@@ -45,6 +45,8 @@ foam.CLASS({
     [ 'dragInputType', '' ],
     [ 'lastPointerX', 0 ],
     [ 'lastPointerY', 0 ],
+    [ 'clearAnimationDuration', 260 ],
+    [ 'clearAnimationFrameId', 0 ],
     {
       name: 'theme',
       expression: function(importedTheme) {
@@ -59,6 +61,11 @@ foam.CLASS({
     {
       class: 'Array',
       name: 'shelfStacks',
+      factory: function() { return []; }
+    },
+    {
+      class: 'Array',
+      name: 'clearAnimations',
       factory: function() { return []; }
     },
     {
@@ -151,6 +158,7 @@ foam.CLASS({
     function resetGame() {
       this.removeAllChildren();
       this.boardPieces = [];
+      this.clearAnimations = [];
 
       var stacks = [];
       for ( var i = 0 ; i < this.upcomingCount ; i++ ) {
@@ -192,7 +200,7 @@ foam.CLASS({
       for ( var size = 52 ; size >= 6 ; size-- ) {
         var gap = size <= 10 ? 1 : size <= 22 ? 2 : 3;
         var margin = size <= 10 ? 4 : size <= 14 ? 6 : size <= 22 ? 10 : size <= 32 ? 16 : 24;
-        var feedGap = size <= 10 ? 8 : size <= 14 ? 10 : size <= 22 ? 16 : size <= 32 ? 26 : 42;
+        var feedGap = size <= 10 ? 16 : size <= 14 ? 20 : size <= 22 ? 32 : size <= 32 ? 52 : 84;
         var feedSlotGap = size <= 10 ? 3 : size <= 16 ? 4 : size <= 24 ? 6 : size <= 34 ? 8 : 12;
         var boardWidth = this.width * size + Math.max(0, this.width - 1) * gap;
         var boardHeight = this.height * size + Math.max(0, this.height - 1) * gap;
@@ -215,7 +223,7 @@ foam.CLASS({
       return {
         cellSize: 6,
         cellGap: 1,
-        feedGap: 8,
+        feedGap: 16,
         feedSlotGap: 3
       };
     },
@@ -330,6 +338,7 @@ foam.CLASS({
       this.paintBackground(ctx);
       this.paintBoard(ctx);
       this.paintDropPreview(ctx);
+      this.paintClearingCells(ctx);
       this.paintFeed(ctx);
     },
 
@@ -384,6 +393,39 @@ foam.CLASS({
       }
     },
 
+    function paintClearingCells(ctx) {
+      if ( ! this.clearAnimations.length ) return;
+
+      var now = this.animationTime();
+
+      for ( var i = 0 ; i < this.clearAnimations.length ; i++ ) {
+        var animation = this.clearAnimations[i];
+        var progress = Math.min(1, Math.max(0,
+          (now - animation.startedAt) / this.clearAnimationDuration));
+        var alpha = progress < 0.18 ? 1 : 1 - (progress - 0.18) / 0.82;
+        var size = this.cellSize * (1 - 0.34 * progress);
+        var inset = (this.cellSize - size) / 2;
+        var oldAlpha = ctx.globalAlpha;
+
+        ctx.globalAlpha = oldAlpha * Math.max(0, alpha);
+
+        for ( var j = 0 ; j < animation.cells.length ; j++ ) {
+          var cell = animation.cells[j];
+
+          this.theme.paintCell(
+            ctx,
+            this.cellX(cell.col) + inset,
+            this.cellY(cell.row) + inset,
+            size,
+            cell.color,
+            cell.texture,
+            this.theme.pieceBorderColor);
+        }
+
+        ctx.globalAlpha = oldAlpha;
+      }
+    },
+
     function paintFeed(ctx) {
       for ( var i = 0 ; i < this.upcomingCount ; i++ ) {
         var x = this.shelfSlotX(i);
@@ -416,11 +458,11 @@ foam.CLASS({
         return;
       }
 
-      this.dropShelfSlot = this.shelfSlotAt(this.lastPointerX, this.lastPointerY);
       this.dropColumn = Math.round((this.draggingPiece.x - this.boardX) / this.cellPitch);
       this.dropRow = Math.round((this.draggingPiece.y - this.boardY) / this.cellPitch);
-      this.validDrop = this.dropShelfSlot === -1 &&
-        this.canPlace(this.draggingPiece, this.dropColumn, this.dropRow);
+      this.validDrop = this.canPlace(this.draggingPiece, this.dropColumn, this.dropRow);
+      this.dropShelfSlot = this.validDrop ? -1 :
+        this.shelfSlotAt(this.lastPointerX, this.lastPointerY);
     },
 
     function canPlace(piece, col, row) {
@@ -502,6 +544,215 @@ foam.CLASS({
       }
 
       if ( piece.parent !== this ) this.add(piece);
+    },
+
+    function clearFullLines() {
+      var lines = this.findFullLines();
+
+      if ( ! lines.rows.length && ! lines.columns.length ) return false;
+
+      var cells = this.collectClearingCells(lines);
+      this.removeClearedBoardCells(lines);
+      this.startClearAnimation(cells);
+      this.layoutPieces();
+      this.invalidate();
+
+      return true;
+    },
+
+    function findFullLines() {
+      var occupied = {};
+      var rows = [];
+      var columns = [];
+
+      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
+        var piece = this.boardPieces[i];
+
+        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
+          var cell = piece.cells[j];
+          occupied[this.indexFor(piece.boardColumn + cell[0], piece.boardRow + cell[1])] = true;
+        }
+      }
+
+      for ( var row = 0 ; row < this.height ; row++ ) {
+        var rowFull = true;
+
+        for ( var col = 0 ; col < this.width ; col++ ) {
+          if ( ! occupied[this.indexFor(col, row)] ) {
+            rowFull = false;
+            break;
+          }
+        }
+
+        if ( rowFull ) rows.push(row);
+      }
+
+      for ( var c = 0 ; c < this.width ; c++ ) {
+        var columnFull = true;
+
+        for ( var r = 0 ; r < this.height ; r++ ) {
+          if ( ! occupied[this.indexFor(c, r)] ) {
+            columnFull = false;
+            break;
+          }
+        }
+
+        if ( columnFull ) columns.push(c);
+      }
+
+      return {
+        rows: rows,
+        columns: columns
+      };
+    },
+
+    function collectClearingCells(lines) {
+      var rowSet = this.arrayToLookup(lines.rows);
+      var columnSet = this.arrayToLookup(lines.columns);
+      var seen = {};
+      var cells = [];
+
+      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
+        var piece = this.boardPieces[i];
+
+        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
+          var cell = piece.cells[j];
+          var col = piece.boardColumn + cell[0];
+          var row = piece.boardRow + cell[1];
+          var key = col + ':' + row;
+
+          if ( ( ! rowSet[row] && ! columnSet[col] ) || seen[key] ) continue;
+
+          seen[key] = true;
+          cells.push({
+            col: col,
+            row: row,
+            color: piece.color,
+            texture: piece.texture
+          });
+        }
+      }
+
+      return cells;
+    },
+
+    function removeClearedBoardCells(lines) {
+      var rowSet = this.arrayToLookup(lines.rows);
+      var columnSet = this.arrayToLookup(lines.columns);
+      var pieces = [];
+
+      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
+        var piece = this.boardPieces[i];
+        var remaining = [];
+
+        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
+          var cell = piece.cells[j];
+          var col = piece.boardColumn + cell[0];
+          var row = piece.boardRow + cell[1];
+
+          if ( rowSet[row] || columnSet[col] ) continue;
+
+          remaining.push([ cell[0], cell[1] ]);
+        }
+
+        if ( remaining.length ) {
+          piece.cells = remaining;
+          this.compactPieceBounds(piece);
+          pieces.push(piece);
+        } else if ( piece.parent === this ) {
+          this.remove(piece);
+        }
+      }
+
+      this.boardPieces = pieces;
+    },
+
+    function compactPieceBounds(piece) {
+      if ( ! piece.cells.length ) return;
+
+      var minCol = piece.cells[0][0];
+      var minRow = piece.cells[0][1];
+      var maxCol = minCol;
+      var maxRow = minRow;
+
+      for ( var i = 1 ; i < piece.cells.length ; i++ ) {
+        var cell = piece.cells[i];
+        minCol = Math.min(minCol, cell[0]);
+        minRow = Math.min(minRow, cell[1]);
+        maxCol = Math.max(maxCol, cell[0]);
+        maxRow = Math.max(maxRow, cell[1]);
+      }
+
+      if ( minCol || minRow ) {
+        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
+          piece.cells[j] = [
+            piece.cells[j][0] - minCol,
+            piece.cells[j][1] - minRow
+          ];
+        }
+
+        piece.boardColumn += minCol;
+        piece.boardRow += minRow;
+      }
+
+      piece.width = maxCol - minCol + 1;
+      piece.height = maxRow - minRow + 1;
+    },
+
+    function arrayToLookup(values) {
+      var lookup = {};
+
+      for ( var i = 0 ; i < values.length ; i++ ) {
+        lookup[values[i]] = true;
+      }
+
+      return lookup;
+    },
+
+    function startClearAnimation(cells) {
+      if ( ! cells.length ) return;
+
+      this.clearAnimations = this.clearAnimations.concat([ {
+        startedAt: this.animationTime(),
+        cells: cells
+      } ]);
+      this.scheduleClearAnimationFrame();
+    },
+
+    function scheduleClearAnimationFrame() {
+      if ( this.clearAnimationFrameId ) return;
+
+      var self = this;
+      var frame = function() {
+        self.clearAnimationFrameId = 0;
+        self.pruneClearAnimations();
+        self.invalidate();
+        if ( self.clearAnimations.length ) self.scheduleClearAnimationFrame();
+      };
+
+      if ( typeof window !== 'undefined' && window.requestAnimationFrame ) {
+        this.clearAnimationFrameId = window.requestAnimationFrame(frame);
+      } else {
+        this.clearAnimationFrameId = setTimeout(frame, 16);
+      }
+    },
+
+    function pruneClearAnimations() {
+      if ( ! this.clearAnimations.length ) return;
+
+      var now = this.animationTime();
+      var duration = this.clearAnimationDuration;
+      this.clearAnimations = this.clearAnimations.filter(function(animation) {
+        return now - animation.startedAt < duration;
+      });
+    },
+
+    function animationTime() {
+      if ( typeof performance !== 'undefined' && performance.now ) {
+        return performance.now();
+      }
+
+      return Date.now();
     },
 
     function removeBoardPiece(piece) {
@@ -603,8 +854,8 @@ foam.CLASS({
       var deadZone = 8;
       if ( distance <= deadZone ) return 0;
 
-      var maxLift = Math.max(44, Math.min(92, this.cellSize * 2.6));
-      var ramp = Math.max(34, Math.min(70, this.cellSize * 1.7));
+      var maxLift = Math.max(56, Math.min(118, this.cellSize * 3.2));
+      var ramp = Math.max(30, Math.min(62, this.cellSize * 1.45));
 
       return maxLift * (1 - Math.exp(-(distance - deadZone) / ramp));
     },
@@ -705,6 +956,7 @@ foam.CLASS({
         }
       } else if ( this.validDrop ) {
         this.placePieceOnBoard(piece, this.dropColumn, this.dropRow);
+        this.clearFullLines();
         if ( this.dragSource === 'shelf' ) this.ensureShelfSlotHasPiece(this.dragSourceSlot);
       } else {
         this.restoreDraggedPiece();
