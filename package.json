@@ -1,0 +1,11 @@
+{
+  "name": "woodblock-game",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node tools/build-dist.js"
+  },
+  "devDependencies": {
+    "uglify-js": "^3.19.3"
+  }
+}
