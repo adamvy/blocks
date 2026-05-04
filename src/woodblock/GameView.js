@@ -60,10 +60,12 @@ foam.CLASS({
       this.resizeGame();
       this.window.addEventListener('resize', this.resizeGame);
       this.window.addEventListener('orientationchange', this.resizeGame);
+      this.window.addEventListener('selectstart', this.selectStart)
       if ( this.window.visualViewport ) {
         this.window.visualViewport.addEventListener('resize', this.resizeGame);
       }
       this.onDetach(function() {
+        this.window.removeEventListener('selectstart', this.selectStart)
         this.window.removeEventListener('resize', this.resizeGame);
         this.window.removeEventListener('orientationchange', this.resizeGame);
         if ( this.window.visualViewport ) {
@@ -96,6 +98,9 @@ foam.CLASS({
   ],
 
   listeners: [
+    function selectStart(e) {
+      e.preventDefault()
+    },
     function resizeGame() {
       if ( ! this.game ) return;
 
