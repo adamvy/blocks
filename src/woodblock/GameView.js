@@ -23,11 +23,20 @@ foam.CLASS({
       display: flex;
       flex-direction: column;
       gap: 10px;
+      justify-content: center;
       max-width: 100%;
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
+      overflow: hidden;
       padding: 12px;
+      width: 100%;
     }
 
     ^canvas {
+      display: flex;
+      justify-content: center;
+      min-height: 0;
       max-width: 100%;
       overflow: hidden;
     }
@@ -99,8 +108,18 @@ foam.CLASS({
       this.SUPER();
       this.resizeGame();
       this.window.addEventListener('resize', this.resizeGame);
+      this.window.addEventListener('orientationchange', this.resizeGame);
+      if ( this.window.visualViewport ) {
+        this.window.visualViewport.addEventListener('resize', this.resizeGame);
+        this.window.visualViewport.addEventListener('scroll', this.resizeGame);
+      }
       this.onDetach(function() {
         this.window.removeEventListener('resize', this.resizeGame);
+        this.window.removeEventListener('orientationchange', this.resizeGame);
+        if ( this.window.visualViewport ) {
+          this.window.visualViewport.removeEventListener('resize', this.resizeGame);
+          this.window.visualViewport.removeEventListener('scroll', this.resizeGame);
+        }
       }.bind(this));
     },
 
@@ -150,14 +169,46 @@ foam.CLASS({
             .end()
           .end()
         .end();
+
+      if ( this.window.requestAnimationFrame ) {
+        this.window.requestAnimationFrame(this.resizeGame);
+      } else {
+        this.resizeGame();
+      }
+    },
+
+    function viewportWidth() {
+      return Math.floor(
+        this.window.visualViewport && this.window.visualViewport.width ||
+        this.window.innerWidth ||
+        1);
+    },
+
+    function viewportHeight() {
+      return Math.floor(
+        this.window.visualViewport && this.window.visualViewport.height ||
+        this.window.innerHeight ||
+        1);
+    },
+
+    function controlReserveHeight() {
+      if ( this.element_ && this.element_.querySelector ) {
+        var controls = this.element_.querySelector('.' + this.myClass('controls'));
+        if ( controls ) {
+          var height = Math.ceil(controls.getBoundingClientRect().height);
+          if ( height > 0 ) return height + 46;
+        }
+      }
+
+      return 124;
     },
 
     function pickCellSize(availableWidth, availableHeight) {
-      for ( var size = 36 ; size >= 12 ; size-- ) {
-        var gap = size <= 22 ? 2 : 3;
-        var margin = size <= 16 ? 8 : size <= 22 ? 10 : size <= 28 ? 16 : 24;
-        var feedGap = size <= 16 ? 6 : size <= 22 ? 8 : size <= 28 ? 16 : 30;
-        var feedSlotGap = size <= 16 ? 4 : size <= 22 ? 6 : size <= 28 ? 8 : 12;
+      for ( var size = 36 ; size >= 8 ; size-- ) {
+        var gap = size <= 10 ? 1 : size <= 22 ? 2 : 3;
+        var margin = size <= 14 ? 6 : size <= 16 ? 8 : size <= 22 ? 10 : size <= 28 ? 16 : 24;
+        var feedGap = size <= 14 ? 5 : size <= 16 ? 6 : size <= 22 ? 8 : size <= 28 ? 16 : 30;
+        var feedSlotGap = size <= 10 ? 3 : size <= 16 ? 4 : size <= 22 ? 6 : size <= 28 ? 8 : 12;
         var boardWidth = this.game.width * size + Math.max(0, this.game.width - 1) * gap;
         var boardHeight = this.game.height * size + Math.max(0, this.game.height - 1) * gap;
         var slot = 4 * size + 3 * gap + 20;
@@ -178,11 +229,11 @@ foam.CLASS({
       }
 
       return {
-        cellSize: 12,
-        cellGap: 2,
-        boardMargin: 8,
-        feedGap: 6,
-        feedSlotGap: 4
+        cellSize: 8,
+        cellGap: 1,
+        boardMargin: 6,
+        feedGap: 5,
+        feedSlotGap: 3
       };
     },
 
@@ -196,8 +247,8 @@ foam.CLASS({
     function resizeGame() {
       if ( ! this.game ) return;
 
-      var availableWidth = Math.max(1, this.window.innerWidth - 24);
-      var availableHeight = Math.max(1, this.window.innerHeight - 148);
+      var availableWidth = Math.max(1, this.viewportWidth() - 24);
+      var availableHeight = Math.max(1, this.viewportHeight() - this.controlReserveHeight());
       var layout = this.pickCellSize(availableWidth, availableHeight);
 
       this.game.cellSize = layout.cellSize;

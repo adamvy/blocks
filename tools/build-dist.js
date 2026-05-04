@@ -38,19 +38,24 @@ fs.writeFileSync(path.join(distDir, 'index.html'), `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Woodblock</title>
     <style>
       html,
       body {
         margin: 0;
+        height: 100%;
         min-height: 100%;
+        width: 100%;
         background: #dfe8e2;
+        overflow: hidden;
       }
 
       body {
         display: grid;
         min-height: 100vh;
+        min-height: 100svh;
+        min-height: 100dvh;
         overflow: hidden;
         place-items: center;
       }
