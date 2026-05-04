@@ -21,9 +21,10 @@ foam.CLASS({
     [ 'height', 10 ],
     [ 'cellSize', 36 ],
     [ 'cellGap', 3 ],
-    [ 'boardMargin', 24 ],
     [ 'feedGap', 30 ],
     [ 'feedSlotGap', 12 ],
+    [ 'canvasWidth', 1 ],
+    [ 'canvasHeight', 1 ],
     [ 'upcomingCount', 3 ],
     [ 'dropColumn', -1 ],
     [ 'dropRow', -1 ],
@@ -78,7 +79,7 @@ foam.CLASS({
     {
       name: 'feedSlotSize',
       expression: function(cellSize, cellGap) {
-        return 4 * cellSize + 3 * cellGap + 20;
+        return 4 * cellSize + 3 * cellGap + Math.max(8, Math.round(cellSize * 0.6));
       }
     },
     {
@@ -89,31 +90,21 @@ foam.CLASS({
       }
     },
     {
-      name: 'canvasWidth',
-      expression: function(boardMargin, boardPixelWidth, feedPixelWidth) {
-        return boardMargin * 2 + Math.max(boardPixelWidth, feedPixelWidth);
-      }
-    },
-    {
-      name: 'canvasHeight',
-      expression: function(boardMargin, boardPixelHeight, feedGap, feedSlotSize) {
-        return boardMargin * 2 + boardPixelHeight + feedGap + feedSlotSize;
-      }
-    },
-    {
       name: 'boardX',
       expression: function(canvasWidth, boardPixelWidth) {
-        return (canvasWidth - boardPixelWidth) / 2;
+        return Math.max(0, (canvasWidth - boardPixelWidth) / 2);
       }
     },
     {
       name: 'boardY',
-      expression: function(boardMargin) { return boardMargin; }
+      expression: function(canvasHeight, boardPixelHeight, feedGap, feedSlotSize) {
+        return Math.max(0, (canvasHeight - boardPixelHeight - feedGap - feedSlotSize) / 2);
+      }
     },
     {
       name: 'feedX',
       expression: function(canvasWidth, feedPixelWidth) {
-        return (canvasWidth - feedPixelWidth) / 2;
+        return Math.max(0, (canvasWidth - feedPixelWidth) / 2);
       }
     },
     {
@@ -171,6 +162,65 @@ foam.CLASS({
       this.invalidate();
     },
 
+    function fitToViewport(width, height) {
+      width = Math.max(1, Math.floor(width || 1));
+      height = Math.max(1, Math.floor(height || 1));
+
+      this.canvasWidth = width;
+      this.canvasHeight = height;
+
+      var layout = this.pickLayout(width, height);
+      this.cellSize = layout.cellSize;
+      this.cellGap = layout.cellGap;
+      this.feedGap = layout.feedGap;
+      this.feedSlotGap = layout.feedSlotGap;
+
+      if ( this.draggingPiece ) {
+        this.draggingPiece.cellSize = this.cellSize;
+        this.draggingPiece.cellGap = this.cellGap;
+        this.updateDropTarget();
+      }
+
+      this.layoutPieces();
+      this.invalidate();
+    },
+
+    function pickLayout(width, height) {
+      for ( var size = 52 ; size >= 6 ; size-- ) {
+        var gap = size <= 10 ? 1 : size <= 22 ? 2 : 3;
+        var margin = size <= 10 ? 4 : size <= 14 ? 6 : size <= 22 ? 10 : size <= 32 ? 16 : 24;
+        var feedGap = size <= 10 ? 4 : size <= 14 ? 5 : size <= 22 ? 8 : size <= 32 ? 16 : 28;
+        var feedSlotGap = size <= 10 ? 3 : size <= 16 ? 4 : size <= 24 ? 6 : size <= 34 ? 8 : 12;
+        var boardWidth = this.width * size + Math.max(0, this.width - 1) * gap;
+        var boardHeight = this.height * size + Math.max(0, this.height - 1) * gap;
+        var slot = this.feedSlotSizeFor(size, gap);
+        var feedWidth = this.upcomingCount * slot +
+          Math.max(0, this.upcomingCount - 1) * feedSlotGap;
+        var contentWidth = margin * 2 + Math.max(boardWidth, feedWidth);
+        var contentHeight = margin * 2 + boardHeight + feedGap + slot;
+
+        if ( contentWidth <= width && contentHeight <= height ) {
+          return {
+            cellSize: size,
+            cellGap: gap,
+            feedGap: feedGap,
+            feedSlotGap: feedSlotGap
+          };
+        }
+      }
+
+      return {
+        cellSize: 6,
+        cellGap: 1,
+        feedGap: 4,
+        feedSlotGap: 3
+      };
+    },
+
+    function feedSlotSizeFor(cellSize, cellGap) {
+      return 4 * cellSize + 3 * cellGap + Math.max(8, Math.round(cellSize * 0.6));
+    },
+
     function resizeBoard(width, height) {
       width = Math.max(4, Math.min(16, Math.round(width)));
       height = Math.max(4, Math.min(16, Math.round(height)));
@@ -180,8 +230,7 @@ foam.CLASS({
       this.width = width;
       this.height = height;
       this.returnOutOfBoundsPiecesToShelf();
-      this.layoutPieces();
-      this.invalidate();
+      this.fitToViewport(this.canvasWidth, this.canvasHeight);
     },
 
     function createRandomPiece() {

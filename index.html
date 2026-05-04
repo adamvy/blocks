@@ -2,20 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Woodblock</title>
     <style>
       html,
       body {
         margin: 0;
         height: 100%;
-        min-height: 100%;
         width: 100%;
         overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
       }
 
       body {
         background: #dfe8e2;
+        inset: 0;
+        position: fixed;
         min-height: 100vh;
         min-height: 100svh;
         min-height: 100dvh;
@@ -23,9 +26,11 @@
 
       canvas {
         display: block;
+        height: 100%;
         max-height: 100%;
         max-width: 100%;
         touch-action: none;
+        width: 100%;
       }
     </style>
     <script src="vendor/foam3/src/foam.js" project="pom"></script>
