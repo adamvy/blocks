@@ -34,14 +34,9 @@ foam.CLASS({
     [ 'activePointerId', -1 ],
     [ 'dragOffsetX', 0 ],
     [ 'dragOffsetY', 0 ],
-    [ 'dragOriginX', 0 ],
-    [ 'dragOriginY', 0 ],
     [ 'dragStartPointerX', 0 ],
     [ 'dragStartPointerY', 0 ],
-    [ 'dragOriginColumn', -1 ],
-    [ 'dragOriginRow', -1 ],
     [ 'dragSourceSlot', -1 ],
-    [ 'dragSource', '' ],
     [ 'dragInputType', '' ],
     [ 'lastPointerX', 0 ],
     [ 'lastPointerY', 0 ],
@@ -55,8 +50,10 @@ foam.CLASS({
     },
     {
       class: 'Array',
-      name: 'boardPieces',
-      factory: function() { return []; }
+      name: 'boardCells',
+      factory: function() {
+        return this.createEmptyBoardCells(this.width, this.height);
+      }
     },
     {
       class: 'Array',
@@ -157,13 +154,12 @@ foam.CLASS({
 
     function resetGame() {
       this.removeAllChildren();
-      this.boardPieces = [];
+      this.boardCells = this.createEmptyBoardCells(this.width, this.height);
       this.clearAnimations = [];
 
       var stacks = [];
       for ( var i = 0 ; i < this.upcomingCount ; i++ ) {
         var piece = this.createRandomPiece();
-        piece.location = 'shelf';
         piece.shelfSlot = i;
         stacks.push([ piece ]);
       }
@@ -238,10 +234,37 @@ foam.CLASS({
 
       if ( this.draggingPiece ) this.restoreDraggedPiece();
 
+      var oldWidth = this.width;
+      var oldHeight = this.height;
+      var oldCells = this.boardCells;
+
       this.width = width;
       this.height = height;
-      this.returnOutOfBoundsPiecesToShelf();
+      this.boardCells = this.resizeBoardCells(oldCells, oldWidth, oldHeight, width, height);
       this.fitToViewport(this.canvasWidth, this.canvasHeight);
+    },
+
+    function createEmptyBoardCells(width, height) {
+      var cells = [];
+      var count = Math.max(0, width * height);
+
+      for ( var i = 0 ; i < count ; i++ ) cells.push(null);
+
+      return cells;
+    },
+
+    function resizeBoardCells(oldCells, oldWidth, oldHeight, width, height) {
+      var cells = this.createEmptyBoardCells(width, height);
+      var copyWidth = Math.min(oldWidth, width);
+      var copyHeight = Math.min(oldHeight, height);
+
+      for ( var row = 0 ; row < copyHeight ; row++ ) {
+        for ( var col = 0 ; col < copyWidth ; col++ ) {
+          cells[row * width + col] = oldCells[row * oldWidth + col] || null;
+        }
+      }
+
+      return cells;
     },
 
     function createRandomPiece() {
@@ -282,15 +305,6 @@ foam.CLASS({
     },
 
     function layoutPieces() {
-      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
-        var boardPiece = this.boardPieces[i];
-        boardPiece.cellSize = this.cellSize;
-        boardPiece.cellGap = this.cellGap;
-        boardPiece.x = this.cellX(boardPiece.boardColumn);
-        boardPiece.y = this.cellY(boardPiece.boardRow);
-        if ( boardPiece.parent !== this ) this.add(boardPiece);
-      }
-
       for ( var slot = 0 ; slot < this.upcomingCount ; slot++ ) {
         var stack = this.shelfStacks[slot] || (this.shelfStacks[slot] = []);
         var top = this.topShelfPiece(slot);
@@ -303,7 +317,6 @@ foam.CLASS({
 
         if ( ! top ) continue;
 
-        top.location = 'shelf';
         top.shelfSlot = slot;
         top.cellSize = this.cellSize;
         top.cellGap = this.cellGap;
@@ -362,14 +375,16 @@ foam.CLASS({
 
       for ( var row = 0 ; row < this.height ; row++ ) {
         for ( var col = 0 ; col < this.width ; col++ ) {
+          var cell = this.boardCells[this.indexFor(col, row)];
+
           this.theme.paintCell(
             ctx,
             this.cellX(col),
             this.cellY(row),
             this.cellSize,
-            this.theme.emptyCellColor,
-            null,
-            this.theme.gridLineColor);
+            cell ? cell.color : this.theme.emptyCellColor,
+            cell && cell.texture,
+            cell ? this.theme.pieceBorderColor : this.theme.gridLineColor);
         }
       }
     },
@@ -483,72 +498,24 @@ foam.CLASS({
       return true;
     },
 
-    function pieceFitsBoard(piece) {
-      for ( var i = 0 ; i < piece.cells.length ; i++ ) {
-        var cell = piece.cells[i];
-        var x = piece.boardColumn + cell[0];
-        var y = piece.boardRow + cell[1];
-
-        if ( x < 0 || y < 0 || x >= this.width || y >= this.height ) return false;
-      }
-
-      return true;
-    },
-
-    function returnOutOfBoundsPiecesToShelf() {
-      var keptPieces = [];
-      var returnedPieces = [];
-
-      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
-        var piece = this.boardPieces[i];
-
-        if ( this.pieceFitsBoard(piece) ) {
-          keptPieces.push(piece);
-        } else {
-          returnedPieces.push(piece);
-        }
-      }
-
-      this.boardPieces = keptPieces;
-
-      for ( var j = 0 ; j < returnedPieces.length ; j++ ) {
-        this.putPieceOnShelf(returnedPieces[j], j % this.upcomingCount);
-      }
-    },
-
     function boardCellOccupied(col, row) {
-      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
-        var piece = this.boardPieces[i];
-
-        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
-          var cell = piece.cells[j];
-          if ( piece.boardColumn + cell[0] === col &&
-               piece.boardRow + cell[1] === row ) {
-            return true;
-          }
-        }
-      }
-
-      return false;
+      return !! this.boardCells[this.indexFor(col, row)];
     },
 
     function placePieceOnBoard(piece, col, row) {
-      piece.location = 'board';
-      piece.shelfSlot = -1;
-      piece.boardColumn = col;
-      piece.boardRow = row;
-      piece.cellSize = this.cellSize;
-      piece.cellGap = this.cellGap;
-      piece.x = this.cellX(col);
-      piece.y = this.cellY(row);
+      var cells = this.boardCells.slice();
 
-      if ( this.boardPieces.indexOf(piece) === -1 ) {
-        var boardPieces = this.boardPieces.slice();
-        boardPieces.push(piece);
-        this.boardPieces = boardPieces;
+      for ( var i = 0 ; i < piece.cells.length ; i++ ) {
+        var pieceCell = piece.cells[i];
+        cells[this.indexFor(col + pieceCell[0], row + pieceCell[1])] = {
+          color: piece.color,
+          texture: piece.texture
+        };
       }
 
-      if ( piece.parent !== this ) this.add(piece);
+      this.boardCells = cells;
+      piece.shelfSlot = -1;
+      if ( piece.parent === this ) this.remove(piece);
     },
 
     function clearFullLines() {
@@ -566,24 +533,14 @@ foam.CLASS({
     },
 
     function findFullLines() {
-      var occupied = {};
       var rows = [];
       var columns = [];
-
-      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
-        var piece = this.boardPieces[i];
-
-        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
-          var cell = piece.cells[j];
-          occupied[this.indexFor(piece.boardColumn + cell[0], piece.boardRow + cell[1])] = true;
-        }
-      }
 
       for ( var row = 0 ; row < this.height ; row++ ) {
         var rowFull = true;
 
         for ( var col = 0 ; col < this.width ; col++ ) {
-          if ( ! occupied[this.indexFor(col, row)] ) {
+          if ( ! this.boardCells[this.indexFor(col, row)] ) {
             rowFull = false;
             break;
           }
@@ -596,7 +553,7 @@ foam.CLASS({
         var columnFull = true;
 
         for ( var r = 0 ; r < this.height ; r++ ) {
-          if ( ! occupied[this.indexFor(c, r)] ) {
+          if ( ! this.boardCells[this.indexFor(c, r)] ) {
             columnFull = false;
             break;
           }
@@ -614,26 +571,19 @@ foam.CLASS({
     function collectClearingCells(lines) {
       var rowSet = this.arrayToLookup(lines.rows);
       var columnSet = this.arrayToLookup(lines.columns);
-      var seen = {};
       var cells = [];
 
-      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
-        var piece = this.boardPieces[i];
+      for ( var row = 0 ; row < this.height ; row++ ) {
+        for ( var col = 0 ; col < this.width ; col++ ) {
+          if ( ! rowSet[row] && ! columnSet[col] ) continue;
 
-        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
-          var cell = piece.cells[j];
-          var col = piece.boardColumn + cell[0];
-          var row = piece.boardRow + cell[1];
-          var key = col + ':' + row;
-
-          if ( ( ! rowSet[row] && ! columnSet[col] ) || seen[key] ) continue;
-
-          seen[key] = true;
+          var cell = this.boardCells[this.indexFor(col, row)];
+          if ( ! cell ) continue;
           cells.push({
             col: col,
             row: row,
-            color: piece.color,
-            texture: piece.texture
+            color: cell.color,
+            texture: cell.texture
           });
         }
       }
@@ -644,64 +594,17 @@ foam.CLASS({
     function removeClearedBoardCells(lines) {
       var rowSet = this.arrayToLookup(lines.rows);
       var columnSet = this.arrayToLookup(lines.columns);
-      var pieces = [];
+      var cells = this.boardCells.slice();
 
-      for ( var i = 0 ; i < this.boardPieces.length ; i++ ) {
-        var piece = this.boardPieces[i];
-        var remaining = [];
-
-        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
-          var cell = piece.cells[j];
-          var col = piece.boardColumn + cell[0];
-          var row = piece.boardRow + cell[1];
-
-          if ( rowSet[row] || columnSet[col] ) continue;
-
-          remaining.push([ cell[0], cell[1] ]);
-        }
-
-        if ( remaining.length ) {
-          piece.cells = remaining;
-          this.compactPieceBounds(piece);
-          pieces.push(piece);
-        } else if ( piece.parent === this ) {
-          this.remove(piece);
+      for ( var row = 0 ; row < this.height ; row++ ) {
+        for ( var col = 0 ; col < this.width ; col++ ) {
+          if ( rowSet[row] || columnSet[col] ) {
+            cells[this.indexFor(col, row)] = null;
+          }
         }
       }
 
-      this.boardPieces = pieces;
-    },
-
-    function compactPieceBounds(piece) {
-      if ( ! piece.cells.length ) return;
-
-      var minCol = piece.cells[0][0];
-      var minRow = piece.cells[0][1];
-      var maxCol = minCol;
-      var maxRow = minRow;
-
-      for ( var i = 1 ; i < piece.cells.length ; i++ ) {
-        var cell = piece.cells[i];
-        minCol = Math.min(minCol, cell[0]);
-        minRow = Math.min(minRow, cell[1]);
-        maxCol = Math.max(maxCol, cell[0]);
-        maxRow = Math.max(maxRow, cell[1]);
-      }
-
-      if ( minCol || minRow ) {
-        for ( var j = 0 ; j < piece.cells.length ; j++ ) {
-          piece.cells[j] = [
-            piece.cells[j][0] - minCol,
-            piece.cells[j][1] - minRow
-          ];
-        }
-
-        piece.boardColumn += minCol;
-        piece.boardRow += minRow;
-      }
-
-      piece.width = maxCol - minCol + 1;
-      piece.height = maxRow - minRow + 1;
+      this.boardCells = cells;
     },
 
     function arrayToLookup(values) {
@@ -760,10 +663,6 @@ foam.CLASS({
       return Date.now();
     },
 
-    function removeBoardPiece(piece) {
-      this.boardPieces = this.boardPieces.filter(function(p) { return p !== piece; });
-    },
-
     function takeShelfPiece(piece) {
       var slot = piece.shelfSlot;
       var stack = this.shelfStacks[slot];
@@ -780,10 +679,7 @@ foam.CLASS({
       var stacks = this.shelfStacks.slice();
       var stack = (stacks[slot] || []).slice();
 
-      piece.location = 'shelf';
       piece.shelfSlot = slot;
-      piece.boardColumn = -1;
-      piece.boardRow = -1;
       stack.push(piece);
 
       stacks[slot] = stack;
@@ -810,30 +706,21 @@ foam.CLASS({
       var target = this.findFirstChildAt(x, y);
       var pickedFromShelfSlot = false;
 
-      if ( ! this.Piece.isInstance(target) ) {
+      if ( ! this.Piece.isInstance(target) ||
+           target.shelfSlot < 0 ||
+           this.topShelfPiece(target.shelfSlot) !== target ) {
         target = this.shelfPieceAt(x, y);
         pickedFromShelfSlot = !! target;
       }
 
       if ( ! this.Piece.isInstance(target) ) return false;
 
-      this.dragSource = target.location;
       this.dragSourceSlot = target.shelfSlot;
-      this.dragOriginColumn = target.boardColumn;
-      this.dragOriginRow = target.boardRow;
-      this.dragOriginX = target.x;
-      this.dragOriginY = target.y;
       this.dragStartPointerX = x;
       this.dragStartPointerY = y;
       this.dragInputType = inputType || '';
 
-      if ( target.location === 'shelf' ) {
-        if ( ! this.takeShelfPiece(target) ) return false;
-      } else if ( target.location === 'board' ) {
-        this.removeBoardPiece(target);
-      } else {
-        return false;
-      }
+      if ( ! this.takeShelfPiece(target) ) return false;
 
       this.draggingPiece = target;
       this.dragOffsetX = pickedFromShelfSlot ? target.pixelWidth() / 2 : x - target.x;
@@ -908,13 +795,10 @@ foam.CLASS({
     function clearDragState() {
       this.draggingPiece = null;
       this.activePointerId = -1;
-      this.dragSource = '';
       this.dragSourceSlot = -1;
       this.dragInputType = '';
       this.dragStartPointerX = 0;
       this.dragStartPointerY = 0;
-      this.dragOriginColumn = -1;
-      this.dragOriginRow = -1;
       this.updateDropTarget();
       this.layoutPieces();
       this.invalidate();
@@ -963,13 +847,11 @@ foam.CLASS({
 
       if ( this.dropShelfSlot !== -1 ) {
         this.putPieceOnShelf(piece, this.dropShelfSlot);
-        if ( this.dragSource === 'shelf' && this.dropShelfSlot !== this.dragSourceSlot ) {
-          this.ensureShelfSlotHasPiece(this.dragSourceSlot);
-        }
+        if ( this.dropShelfSlot !== this.dragSourceSlot ) this.ensureShelfSlotHasPiece(this.dragSourceSlot);
       } else if ( this.validDrop ) {
         this.placePieceOnBoard(piece, this.dropColumn, this.dropRow);
         this.clearFullLines();
-        if ( this.dragSource === 'shelf' ) this.ensureShelfSlotHasPiece(this.dragSourceSlot);
+        this.ensureShelfSlotHasPiece(this.dragSourceSlot);
       } else {
         this.restoreDraggedPiece();
         return;
@@ -982,14 +864,7 @@ foam.CLASS({
       var piece = this.draggingPiece;
       if ( ! piece ) return;
 
-      if ( this.dragSource === 'shelf' ) {
-        this.putPieceOnShelf(piece, this.dragSourceSlot);
-      } else if ( this.dragSource === 'board' ) {
-        this.placePieceOnBoard(piece, this.dragOriginColumn, this.dragOriginRow);
-      } else {
-        piece.x = this.dragOriginX;
-        piece.y = this.dragOriginY;
-      }
+      this.putPieceOnShelf(piece, this.dragSourceSlot);
 
       this.clearDragState();
     }

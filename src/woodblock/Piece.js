@@ -17,10 +17,7 @@ foam.CLASS({
     [ 'cellSize', 36 ],
     [ 'cellGap', 3 ],
     [ 'shapeName', 'single' ],
-    [ 'location', 'shelf' ],
     [ 'shelfSlot', -1 ],
-    [ 'boardColumn', -1 ],
-    [ 'boardRow', -1 ],
     {
       class: 'Array',
       name: 'cells',
