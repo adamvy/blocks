@@ -36,10 +36,13 @@ foam.CLASS({
     [ 'dragOffsetY', 0 ],
     [ 'dragStartPointerX', 0 ],
     [ 'dragStartPointerY', 0 ],
+    [ 'dragStartTime', 0 ],
     [ 'dragSourceSlot', -1 ],
     [ 'dragInputType', '' ],
     [ 'lastPointerX', 0 ],
     [ 'lastPointerY', 0 ],
+    [ 'tapDuration', 240 ],
+    [ 'tapMoveTolerance', 8 ],
     [ 'clearAnimationDuration', 260 ],
     [ 'clearAnimationFrameId', 0 ],
     {
@@ -718,6 +721,7 @@ foam.CLASS({
       this.dragSourceSlot = target.shelfSlot;
       this.dragStartPointerX = x;
       this.dragStartPointerY = y;
+      this.dragStartTime = this.animationTime();
       this.dragInputType = inputType || '';
 
       if ( ! this.takeShelfPiece(target) ) return false;
@@ -757,6 +761,17 @@ foam.CLASS({
       var ramp = Math.max(30, Math.min(62, this.cellSize * 1.45));
 
       return maxLift * (1 - Math.exp(-(distance - deadZone) / ramp));
+    },
+
+    function isShelfTap() {
+      if ( ! this.draggingPiece || this.dragSourceSlot < 0 ) return false;
+
+      var dx = this.lastPointerX - this.dragStartPointerX;
+      var dy = this.lastPointerY - this.dragStartPointerY;
+      var distance = Math.sqrt(dx * dx + dy * dy);
+      var elapsed = this.animationTime() - this.dragStartTime;
+
+      return distance <= this.tapMoveTolerance && elapsed <= this.tapDuration;
     },
 
     function eventToCanvasPoint(e) {
@@ -799,6 +814,7 @@ foam.CLASS({
       this.dragInputType = '';
       this.dragStartPointerX = 0;
       this.dragStartPointerY = 0;
+      this.dragStartTime = 0;
       this.updateDropTarget();
       this.layoutPieces();
       this.invalidate();
@@ -844,6 +860,13 @@ foam.CLASS({
     function finishDrag() {
       var piece = this.draggingPiece;
       if ( ! piece ) return;
+
+      if ( this.isShelfTap() ) {
+        piece.rotateClockwise();
+        this.putPieceOnShelf(piece, this.dragSourceSlot);
+        this.clearDragState();
+        return;
+      }
 
       if ( this.dropShelfSlot !== -1 ) {
         this.putPieceOnShelf(piece, this.dropShelfSlot);

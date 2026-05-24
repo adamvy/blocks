@@ -69,6 +69,24 @@ foam.CLASS({
       return this.height * this.cellSize + Math.max(0, this.height - 1) * this.cellGap;
     },
 
+    function rotateClockwise() {
+      var width = this.width;
+      var height = this.height;
+      var cells = this.cells.map(function(cell) {
+        return [ height - 1 - cell[1], cell[0] ];
+      });
+
+      cells.sort(function(a, b) {
+        return a[1] - b[1] || a[0] - b[0];
+      });
+
+      this.width = height;
+      this.height = width;
+      this.cells = cells;
+
+      return this;
+    },
+
     function hitTest(p) {
       return p.x >= 0 && p.y >= 0 &&
         p.x < this.pixelWidth() &&
