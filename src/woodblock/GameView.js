@@ -18,6 +18,10 @@ foam.CLASS({
 
   css: `
     ^ {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
+      -webkit-user-select: none;
       box-sizing: border-box;
       display: block;
       height: 100vh;
@@ -30,15 +34,21 @@ foam.CLASS({
       overflow: hidden;
       padding: 0;
       touch-action: none;
+      user-select: none;
       width: 100vw;
     }
 
     ^ canvas {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
+      -webkit-user-select: none;
       display: block;
       height: 100%;
       max-height: 100%;
       max-width: 100%;
       touch-action: none;
+      user-select: none;
       width: 100%;
     }
   `,
@@ -60,12 +70,14 @@ foam.CLASS({
       this.resizeGame();
       this.window.addEventListener('resize', this.resizeGame);
       this.window.addEventListener('orientationchange', this.resizeGame);
-      this.window.addEventListener('selectstart', this.selectStart)
+      this.window.addEventListener('selectstart', this.preventBrowserSelection);
+      this.window.addEventListener('contextmenu', this.preventBrowserSelection);
       if ( this.window.visualViewport ) {
         this.window.visualViewport.addEventListener('resize', this.resizeGame);
       }
       this.onDetach(function() {
-        this.window.removeEventListener('selectstart', this.selectStart)
+        this.window.removeEventListener('selectstart', this.preventBrowserSelection);
+        this.window.removeEventListener('contextmenu', this.preventBrowserSelection);
         this.window.removeEventListener('resize', this.resizeGame);
         this.window.removeEventListener('orientationchange', this.resizeGame);
         if ( this.window.visualViewport ) {
@@ -98,8 +110,8 @@ foam.CLASS({
   ],
 
   listeners: [
-    function selectStart(e) {
-      e.preventDefault()
+    function preventBrowserSelection(e) {
+      e.preventDefault();
     },
     function resizeGame() {
       if ( ! this.game ) return;
